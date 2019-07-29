@@ -23,7 +23,7 @@
 // import axios from 'axios'
 // import request from '@/utils/request.js'
 import { login } from '@/api/user.js'
-// abc.login()
+import { mapMutations } from 'vuex'
 
 export default {
   name: 'LoginIndex',
@@ -36,10 +36,13 @@ export default {
     }
   },
   methods: {
+    // 在methods中有setUser方法
+    ...mapMutations(['setUser']),
     async handleLogin() {
       try {
         const data = await login(this.user)
         console.log(data)
+        this.setUser(data)
       } catch (error) {
         console.log(error)
       }
@@ -56,3 +59,8 @@ export default {
   }
 }
 </style>
+
+
+// token
+// 1. 保存token->localStorage
+// 2. 多个组件都要共享使用->vuex
