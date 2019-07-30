@@ -18,7 +18,24 @@
             频道2 -> loading->false ->
            -->
           <van-list v-model="item.upPullLoading" :finished="item.upPullFinished" finished-text="没有更多了" @load="onLoad">
-            <van-cell v-for="item in item.articles" :key="item.art_id" :title="item.title" />
+            <van-cell v-for="item in item.articles" :key="item.art_id" :title="item.title">
+              <template slot="label">
+                <van-grid v-show="item.cover.type!==0" :border="false" :column-num="3">
+                  <van-grid-item v-for="src in item.cover.images" :key="src">
+                    <van-image :src="src" lazy-load />
+                  </van-grid-item>
+                </van-grid>
+                <p>
+                  <span>作者:{{item.aut_name}}</span>
+                  &nbsp;
+                  <span>评论 :{{item.comm_count}}</span>
+                  &nbsp;
+                  <span>时间:{{item.pubdate | relTime}}</span>
+                  &nbsp; &nbsp;
+                  <van-icon class="close" name="cross" @click="showMoreActionDia()"></van-icon>
+                </p>
+              </template>
+            </van-cell>
           </van-list>
 
         </van-pull-refresh>
@@ -27,29 +44,60 @@
 
     </van-tabs>
 
+    <!-- 更多操作 -->
+    <more-action v-model="isShowDiaMore"></more-action>
+
   </div>
 </template>
 
 <script>
 import { getChannelsUserOrDefault } from '@/api/channel.js'
 import { getArticles } from '@/api/article.js'
-
 import { mapState } from 'vuex'
+import MoreAction from './components/more-action.vue'
 
 export default {
   name: 'HomeIndex',
+  components: {
+    MoreAction
+  },
   data() {
     return {
-      activeChannelIndex: 1,
+      activeChannelIndex: 0,
       list: [],
       loading: false,
       finished: false,
       isLoading: false,
-      channels: []
+      channels: [],
+      isShowDiaMore: false
     }
   },
   created() {
     this.loadChannels()
+  },
+  // 监测store.state.user
+  watch: {
+    // 'list'(newValue, oldValue) {
+
+    // },
+    // list:(newV,oldV)=>{
+
+    // }
+    // 'list':()=>{}
+    // 凡是可以使用this.出来的数据,都可以使用watch监测
+    // this.$store.state.user
+    // '$store.state.user'(){
+
+    // }
+    user(newV, oldV) {
+      // 更新频道列表
+      this.loadChannels()
+      // 更新加载的动画
+      this.activeChannel.upPullLoading = true
+      // 更新文章列表
+      this.loadArticles()
+      // this.onLoad()
+    }
   },
   computed: {
     ...mapState(['user']),
@@ -58,6 +106,10 @@ export default {
     }
   },
   methods: {
+    // 点击-> 打开对话框
+    showMoreActionDia() {
+      this.isShowDiaMore = true
+    },
     async loadChannels() {
       // 取出本地数据
       const lsChannels = JSON.parse(window.localStorage.getItem('channels'))
@@ -109,6 +161,8 @@ export default {
     },
     // 加载更多的方法
     async onLoad() {
+      console.log('------')
+
       // 延迟执行是独立作用的函数->多次使用
       // 1. 函数
       // 2. 模块.js
@@ -178,3 +232,14 @@ export default {
   margin-top: 92px;
 }
 </style>
+
+
+
+
+
+//  moment.js
+
+// 时间格式需要处理->momentjs->
+// dayjs
+// 1. 和momentjsAPI一样
+// 2. 2k

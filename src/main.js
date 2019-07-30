@@ -4,14 +4,22 @@ import router from './router'
 import store from './store'
 import Vant from 'vant'
 import VeeValidate, { Validator } from 'vee-validate'
+import VueLazyload from 'vue-lazyload'
+import dayjs from 'dayjs'
+import relativeTime from 'dayjs/plugin/relativeTime'
+
 import 'vant/lib/index.css'
 import 'amfe-flexible/index.js'
 
 import zh_CN from 'vee-validate/dist/locale/zh_CN'
+import 'dayjs/locale/zh-cn'
+dayjs.locale('zh-cn')
 
 Vue.use(Vant)
 Vue.use(VeeValidate)
+Vue.use(VueLazyload)
 Validator.localize('zh_CN', zh_CN)
+dayjs.extend(relativeTime)
 
 // 自定义验证规则
 Validator.extend('phone', {
@@ -41,6 +49,27 @@ Vue.prototype.$sleep = time => {
         }, time)
     })
 }
+
+// 全局过滤器
+Vue.filter('relTime', value => {
+    return dayjs()
+        .locale('zh-cn')
+        .from(value)
+})
+
+// console.log(dayjs().format())
+
+// dayjs().from(dayjs('1990')) // 2 years ago
+
+// console.log(dayjs().from(dayjs('1990')))
+
+// dayjs('2018-05-05').locale('zh-cn').format()
+
+// console.log(
+//     dayjs()
+//     .locale('zh-cn')
+//     .from(dayjs())
+// )
 
 Vue.config.productionTip = false
 
