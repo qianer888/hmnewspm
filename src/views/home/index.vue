@@ -21,7 +21,7 @@
             <van-cell v-for="item in item.articles" :key="item.art_id" :title="item.title">
               <template slot="label">
                 <van-grid v-show="item.cover.type!==0" :border="false" :column-num="3">
-                  <van-grid-item v-for="src in item.cover.images" :key="src">
+                  <van-grid-item v-for="(src,index) in item.cover.images" :key="src+index">
                     <van-image :src="src" lazy-load />
                   </van-grid-item>
                 </van-grid>
@@ -95,8 +95,8 @@ export default {
       // 更新加载的动画
       this.activeChannel.upPullLoading = true
       // 更新文章列表
-      this.loadArticles()
-      // this.onLoad()
+      // this.loadArticles()
+      this.onLoad()
     }
   },
   computed: {
