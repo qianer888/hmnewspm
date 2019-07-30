@@ -1,6 +1,7 @@
 // 配置axios
 // 如:baseURL 请求拦截器 响应拦截器
 import axios from 'axios'
+import store from '@/store.js'
 
 // 配置baseURL 并且返回axios实例对象->request
 const request = axios.create({
@@ -10,6 +11,24 @@ const request = axios.create({
 // 请求拦截器
 request.interceptors.request.use(
     function(config) {
+        // console.log(config.url)
+        const { user } = store.state
+            // console.log(user)
+
+        // 利用逻辑运算符简化if嵌套
+        config.url !== '/app/v1_0/authorizations' &&
+            user &&
+            (config.headers.Authorization = `Bearer ${user.token}`)
+
+        // 如果是非登录请求
+        // if (config !== '/app/v1_0/authorizations') {
+        //     // 如果用户登录了->token
+        //     if (user) {
+        //         //设置请求头
+        //         config.headers.Authorization = `Bearer ${user.token}`
+        //     }
+        // }
+
         return config
     },
     function(error) {

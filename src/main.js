@@ -26,6 +26,22 @@ Validator.extend('phone', {
     }
 })
 
+// 睡眠
+// 看到异步->
+// 1. cb -> 回调地狱  ->  层层嵌套
+// 2. Promise -> 缺点
+//   2.1 一个Promise对应一个异步
+//   2.2 .then().catch()
+// 3. async await
+
+Vue.prototype.$sleep = time => {
+    return new Promise(resolve => {
+        setTimeout(() => {
+            resolve()
+        }, time)
+    })
+}
+
 Vue.config.productionTip = false
 
 new Vue({

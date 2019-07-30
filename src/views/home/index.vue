@@ -8,18 +8,22 @@
 
      -->
     <van-tabs v-model="activeChannelIndex" class="channel-tabs">
-      <van-tab title="我是第1个">
-        <van-pull-refresh v-model="isLoading" @refresh="onRefresh">
+      <van-tab :title="item.name" v-for="item in channels" :key="item.id">
+
+        <van-pull-refresh v-model="item.downPullLoading" @refresh="onRefresh">
 
           <!-- 列表  van-list -->
-          <van-list v-model="loading" :finished="finished" finished-text="没有更多了" @load="onLoad">
-            <van-cell v-for="item in list" :key="item" :title="item" />
+          <!--
+            频道1 -> loading->false -> true
+            频道2 -> loading->false ->
+           -->
+          <van-list v-model="item.upPullLoading" :finished="item.upPullFinished" finished-text="没有更多了" @load="onLoad">
+            <van-cell v-for="item in item.articles" :key="item.art_id" :title="item.title" />
           </van-list>
 
         </van-pull-refresh>
 
       </van-tab>
-      <van-tab title="我是第2个"></van-tab>
 
     </van-tabs>
 
@@ -28,12 +32,15 @@
 
 <script>
 import { getChannelsUserOrDefault } from '@/api/channel.js'
+import { getArticles } from '@/api/article.js'
+
+import { mapState } from 'vuex'
 
 export default {
   name: 'HomeIndex',
   data() {
     return {
-      activeChannelIndex: 0,
+      activeChannelIndex: 1,
       list: [],
       loading: false,
       finished: false,
@@ -44,12 +51,35 @@ export default {
   created() {
     this.loadChannels()
   },
+  computed: {
+    ...mapState(['user']),
+    activeChannel() {
+      return this.channels[this.activeChannelIndex]
+    }
+  },
   methods: {
     async loadChannels() {
+      // 取出本地数据
+      const lsChannels = JSON.parse(window.localStorage.getItem('channels'))
+
       try {
-        const data = await getChannelsUserOrDefault()
-        // data->{channels:[{},{}]}
-        this.channels = data.channels
+        if (this.user || (!this.user && !lsChannels)) {
+          const data = await getChannelsUserOrDefault()
+
+          data.channels.forEach(item => {
+            // id和name
+            item.downPullLoading = false // 当前频道下拉状态
+            item.upPullLoading = false // 当前频道上拉加载更多
+            item.upPullFinished = false // 当前频道加载完毕
+            item.timestamp = Date.now() // 为每个频道添加默认时间戳属性
+            item.articles = [] // 为了控制每个频道自己的文章列表数据
+          })
+          this.channels = data.channels
+        }
+
+        if (!this.user && lsChannels) {
+          this.channels = lsChannels
+        }
       } catch (error) {
         // console.log(error)
         console.dir(error)
@@ -62,23 +92,58 @@ export default {
         this.isLoading = false
       }, 500)
     },
+
+    // 获取文章列表数据
+    async loadArticles() {
+      const { id: channel_id, timestamp } = this.activeChannel
+
+      const data = await getArticles({
+        // 当前激活的频道的id<-当前激活的频道<-activeChannel
+        channel_id,
+        // timestamp: Date.now(),
+        // timestamp,
+        timestamp,
+        with_top: 1
+      })
+      return data
+    },
     // 加载更多的方法
-    onLoad() {
-      console.log('------')
+    async onLoad() {
+      // 延迟执行是独立作用的函数->多次使用
+      // 1. 函数
+      // 2. 模块.js
+      // 3. 挂载Vue的实例上  ->  this.$sleep()
 
-      // 异步更新数据
-      setTimeout(() => {
-        for (let i = 0; i < 10; i++) {
-          this.list.push(this.list.length + 1)
-        }
-        // 加载状态结束
-        this.loading = false
+      await this.$sleep(800)
 
-        // 数据全部加载完成
-        if (this.list.length >= 40) {
-          this.finished = true
-        }
-      }, 500)
+      let data = []
+      // 第一次发送请求
+      data = await this.loadArticles()
+      // console.log(data) // -->    {results:[],pre_time:1556789000001}
+
+      // 有历史时间戳
+      if (data.pre_timestamp && data.results.length === 0) {
+        // 更新timestamp时间戳
+        this.activeChannel.timestamp = data.pre_timestamp
+        // 根据当前的有效时间戳发送新请求
+        data = await this.loadArticles()
+        // console.log(data)
+      }
+
+      // 所有数据加载完毕
+      if (!data.pre_timestamp) {
+        this.activeChannel.upPullLoading = false
+        this.activeChannel.upPullFinished = true
+
+        return
+      }
+
+      // 更新最新的时间戳
+      this.activeChannel.timestamp = data.pre_timestamp
+      // 时间戳 ->   频道数据channels  和  当前文章列表数据data.results
+      this.activeChannel.articles.push(...data.results)
+      // 停止加载中的动画
+      this.activeChannel.upPullLoading = false
     }
   }
 }
