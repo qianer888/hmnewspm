@@ -5,20 +5,14 @@
     <!-- 内容
     1. tabs切换
     2. list列表: 加载更多+下拉刷新
-
      -->
     <van-tabs v-model="activeChannelIndex" class="channel-tabs">
       <van-tab :title="item.name" v-for="item in channels" :key="item.id">
 
         <van-pull-refresh v-model="item.downPullLoading" @refresh="onRefresh">
-
           <!-- 列表  van-list -->
-          <!--
-            频道1 -> loading->false -> true
-            频道2 -> loading->false ->
-           -->
           <van-list v-model="item.upPullLoading" :finished="item.upPullFinished" finished-text="没有更多了" @load="onLoad">
-            <van-cell v-for="item in item.articles" :key="item.art_id" :title="item.title">
+            <van-cell v-for="item in item.articles" :key="item.art_id.toString()" :title="item.title">
               <template slot="label">
                 <van-grid v-show="item.cover.type!==0" :border="false" :column-num="3">
                   <van-grid-item v-for="(src,index) in item.cover.images" :key="src+index">
@@ -32,7 +26,7 @@
                   &nbsp;
                   <span>时间:{{item.pubdate | relTime}}</span>
                   &nbsp; &nbsp;
-                  <van-icon class="close" name="cross" @click="showMoreActionDia()"></van-icon>
+                  <van-icon class="close" name="cross" @click="showMoreActionDia(item)"></van-icon>
                 </p>
               </template>
             </van-cell>
@@ -45,7 +39,7 @@
     </van-tabs>
 
     <!-- 更多操作 -->
-    <more-action v-model="isShowDiaMore"></more-action>
+    <more-action @dislike-success="handleDislikeSuccess" v-model="isShowDiaMore" :currentArticle="currentArticle"></more-action>
 
   </div>
 </template>
@@ -69,7 +63,8 @@ export default {
       finished: false,
       isLoading: false,
       channels: [],
-      isShowDiaMore: false
+      isShowDiaMore: false,
+      currentArticle: null
     }
   },
   created() {
@@ -106,8 +101,27 @@ export default {
     }
   },
   methods: {
+    handleDislikeSuccess() {
+      // 应该发送delete删除文章的请求->res->修改数据
+      // 假删除->
+
+      // findIndex
+      // 1. 这是数组的实例方法
+      // 2. 能遍历
+      // 3. 传cb
+      // 4. cb的形参代表每个元素
+      // 5. return 条件
+      // 6. findIndex会把符合return条件的元素的索引
+
+      const index = this.activeChannel.articles.findIndex(item => {
+        return item === this.currentArticle
+      })
+
+      this.activeChannel.articles.splice(index, 1)
+    },
     // 点击-> 打开对话框
-    showMoreActionDia() {
+    showMoreActionDia(currentArticle) {
+      this.currentArticle = currentArticle
       this.isShowDiaMore = true
     },
     async loadChannels() {
@@ -133,7 +147,6 @@ export default {
           this.channels = lsChannels
         }
       } catch (error) {
-        // console.log(error)
         console.dir(error)
       }
     },
@@ -161,8 +174,6 @@ export default {
     },
     // 加载更多的方法
     async onLoad() {
-      console.log('------')
-
       // 延迟执行是独立作用的函数->多次使用
       // 1. 函数
       // 2. 模块.js
@@ -173,15 +184,12 @@ export default {
       let data = []
       // 第一次发送请求
       data = await this.loadArticles()
-      // console.log(data) // -->    {results:[],pre_time:1556789000001}
-
       // 有历史时间戳
       if (data.pre_timestamp && data.results.length === 0) {
         // 更新timestamp时间戳
         this.activeChannel.timestamp = data.pre_timestamp
         // 根据当前的有效时间戳发送新请求
         data = await this.loadArticles()
-        // console.log(data)
       }
 
       // 所有数据加载完毕
@@ -234,12 +242,3 @@ export default {
 </style>
 
 
-
-
-
-//  moment.js
-
-// 时间格式需要处理->momentjs->
-// dayjs
-// 1. 和momentjsAPI一样
-// 2. 2k

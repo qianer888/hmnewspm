@@ -19,3 +19,17 @@ export const getArticles = ({ channel_id, timestamp, with_top = 1 }) => {
         }
     })
 }
+
+/**
+ * 不喜欢文章
+ * target	integer	必须		不喜欢的文章id
+ */
+export const dislikeArticle = article_Id => {
+    return request({
+        method: 'post',
+        url: `/app/v1_0/article/dislikes`,
+        data: {
+            target: article_Id
+        }
+    })
+}

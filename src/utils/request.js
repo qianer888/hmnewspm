@@ -2,11 +2,23 @@
 // 如:baseURL 请求拦截器 响应拦截器
 import axios from 'axios'
 import store from '@/store.js'
+import JSONBig from 'json-bigint'
 
 // 配置baseURL 并且返回axios实例对象->request
 const request = axios.create({
     baseURL: 'http://ttapi.research.itcast.cn'
 })
+
+// 配置JSONBig包
+request.defaults.transformResponse = [
+    function(data) {
+        try {
+            return JSONBig.parse(data)
+        } catch (error) {
+            return data
+        }
+    }
+]
 
 // 请求拦截器
 request.interceptors.request.use(
