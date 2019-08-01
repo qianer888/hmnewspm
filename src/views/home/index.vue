@@ -7,9 +7,15 @@
     2. list列表: 加载更多+下拉刷新
      -->
     <van-tabs v-model="activeChannelIndex" class="channel-tabs">
+
+      <!-- 自定义按钮 -->
+      <div slot='nav-right' class="wap-nav" @click="showChannel">
+        <van-icon name="wap-nav"></van-icon>
+      </div>
+
       <van-tab :title="item.name" v-for="item in channels" :key="item.id">
 
-        <van-pull-refresh v-model="item.downPullLoading" @refresh="onRefresh">
+        <van-pull-refresh :success-text="refreshSuccessText" v-model="item.downPullLoading" @refresh="onRefresh">
           <!-- 列表  van-list -->
           <van-list v-model="item.upPullLoading" :finished="item.upPullFinished" finished-text="没有更多了" @load="onLoad">
             <van-cell v-for="item in item.articles" :key="item.art_id.toString()" :title="item.title">
@@ -41,6 +47,16 @@
     <!-- 更多操作 -->
     <more-action @dislike-success="handleDislikeSuccess" v-model="isShowDiaMore" :currentArticle="currentArticle"></more-action>
 
+    <!-- 频道管理 -->
+    <channels :activeIndex="activeChannelIndex" :channels="channels" v-model="isShowPopChannel" @update:active-index="activeChannelIndex=$event"></channels>
+
+    <!--
+        fn($event){
+          this.activeChannelIndex=$event
+        }
+
+
+     -->
   </div>
 </template>
 
@@ -49,11 +65,13 @@ import { getChannelsUserOrDefault } from '@/api/channel.js'
 import { getArticles } from '@/api/article.js'
 import { mapState } from 'vuex'
 import MoreAction from './components/more-action.vue'
+import Channels from './components/channels.vue'
 
 export default {
   name: 'HomeIndex',
   components: {
-    MoreAction
+    MoreAction,
+    Channels
   },
   data() {
     return {
@@ -64,7 +82,9 @@ export default {
       isLoading: false,
       channels: [],
       isShowDiaMore: false,
-      currentArticle: null
+      isShowPopChannel: false,
+      currentArticle: null,
+      refreshSuccessText: ''
     }
   },
   created() {
@@ -101,6 +121,9 @@ export default {
     }
   },
   methods: {
+    showChannel() {
+      this.isShowPopChannel = true
+    },
     handleDislikeSuccess() {
       // 应该发送delete删除文章的请求->res->修改数据
       // 假删除->
@@ -126,9 +149,10 @@ export default {
     },
     async loadChannels() {
       // 取出本地数据
-      const lsChannels = JSON.parse(window.localStorage.getItem('channels'))
+      const lsChannels = JSON.parse(window.localStorage.getItem('channels')) //[{ios}]
 
       try {
+        // 如果登录 或者 (没登录 并且没有本地)
         if (this.user || (!this.user && !lsChannels)) {
           const data = await getChannelsUserOrDefault()
 
@@ -143,19 +167,42 @@ export default {
           this.channels = data.channels
         }
 
+        // 如果没登录 并且 有本地
         if (!this.user && lsChannels) {
-          this.channels = lsChannels
+          this.channels = lsChannels // [{ios}]
         }
       } catch (error) {
         console.dir(error)
       }
     },
     // 下拉刷新的方法
-    onRefresh() {
-      setTimeout(() => {
-        this.$toast('刷新成功')
-        this.isLoading = false
-      }, 500)
+    async onRefresh() {
+      await this.$sleep(800)
+      // 更新为最新时间戳
+      this.activeChannel.timestamp = Date.now()
+      // 获取最新数据
+      const data = await this.loadArticles()
+      // 有最新数据
+      if (data.results.length) {
+        // 重置数据
+        this.activeChannel.articles = data.results // data.results=>10条
+        // 重置时间戳
+        this.activeChannel.timestamp = data.pre_timestamp
+        // 手动调用加载调用onLoad方法->保证数据是满屏的
+        this.onLoad()
+        // 提示-> 更新完毕
+        this.refreshSuccessText = '更新完毕'
+      }
+      // 无最新数据
+      this.refreshSuccessText = '无最新数据'
+
+      // 停止动画
+      this.activeChannel.downPullLoading = false
+
+      // setTimeout(() => {
+      //   this.$toast('刷新成功')
+      //   this.isLoading = false
+      // }, 500)
     },
 
     // 获取文章列表数据
@@ -238,6 +285,11 @@ export default {
 // 调整tabs的内容的位置
 .channel-tabs /deep/ .van-tabs__content {
   margin-top: 92px;
+}
+// 调整tabs右按钮的位置
+.channel-tabs /deep/ .wap-nav {
+  position: fixed;
+  right: 0px;
 }
 </style>
 

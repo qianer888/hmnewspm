@@ -9,26 +9,32 @@
 
     <van-cell-group v-else>
       <van-cell icon="arrow-left" @click="isReport=false" />
-      <van-cell title="侵权" icon="location-o" />
-      <van-cell title="色情" icon="location-o" />
-      <van-cell title="暴力" icon="location-o" />
-      <van-cell title="低俗" icon="location-o" />
-      <van-cell title="不适" icon="location-o" />
-      <van-cell title="错误" icon="location-o" />
-      <van-cell title="其他" icon="location-o" />
+      <van-cell @click="handleReportArticle(item)" :title="item.title" icon="location-o" v-for="item in reportsType" :key="item.value" />
+
     </van-cell-group>
   </van-dialog>
 
 </template>
 
 <script>
-import { dislikeArticle } from '@/api/article.js'
+import { dislikeArticle, reportArticleByIdAndType } from '@/api/article.js'
 
 export default {
   name: 'MoreAction',
   data() {
     return {
-      isReport: false
+      isReport: false,
+      reportsType: [
+        { title: '其他问题', value: 0 },
+        { title: '标题夸张', value: 1 },
+        { title: '低俗色情', value: 2 },
+        { title: '错别字多', value: 3 },
+        { title: '旧闻重复', value: 4 },
+        { title: '广告软文', value: 5 },
+        { title: '内容不实', value: 6 },
+        { title: '涉嫌违法犯罪', value: 7 },
+        { title: '侵权', value: 8 }
+      ]
     }
   },
   props: {
@@ -52,6 +58,29 @@ export default {
     }
   },
   methods: {
+    async handleReportArticle(item) {
+      const { art_id: article_Id } = this.currentArticle
+      try {
+        await reportArticleByIdAndType({
+          article_Id,
+          type: item.value
+        })
+
+        // 移除当前文章->让父组件移动当前文章
+        this.$emit('dislike-success')
+        // 关闭对话框
+        this.$emit('input', false)
+        // 提示
+        this.$toast('举报成功')
+      } catch (error) {
+        console.dir(error)
+        if (error.response.status === 409) {
+          this.$toast('已被举报过')
+        } else {
+          this.$toast('举报失败')
+        }
+      }
+    },
     async handleDislikeArticle() {
       const { art_id: article_Id } = this.currentArticle
 

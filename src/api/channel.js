@@ -13,3 +13,37 @@ export const getChannelsUserOrDefault = () => {
         url: `/app/v1_0/user/channels`
     })
 }
+
+/**
+ * 获取所有频道列表数据
+ */
+
+export const getAllChannels = () => {
+    return request({
+        method: 'get',
+        url: `/app/v1_0/channels`
+    })
+}
+
+/**
+ * 批量修改用户频道列表（重置式）
+ * channels:[
+ *  {
+ *    id:1 频道id
+ *    seq:1 -> 顺序序号
+ * }
+ * ]
+ *
+ * id-> 要求排除第一个
+ * seq 要求从2开始
+ */
+
+export const resetUserChannels = channels => {
+    return request({
+        method: 'PUT',
+        url: `/app/v1_0/user/channels`,
+        data: {
+            channels
+        }
+    })
+}
