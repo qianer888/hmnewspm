@@ -26,6 +26,20 @@ export default new Router({
             // 路由的 ->组件的懒加载
             component: () =>
                 import ('@/views/login')
+        },
+        {
+            path: '/search',
+            name: 'search',
+            // 路由的 ->组件的懒加载
+            component: () =>
+                import ('@/views/search')
+        },
+        {
+            path: '/search-result',
+            name: 'search-result',
+            // 路由的 ->组件的懒加载
+            component: () =>
+                import ('@/views/search/search-result.vue')
         }
     ]
 })

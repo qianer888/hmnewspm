@@ -14,8 +14,8 @@
       </div>
       <van-grid class="channel-content" :gutter="10" clickable>
         <van-grid-item v-for="(item,index) in channels" :key="item.id" text="文字" @click="handleClickChannel(item,index)">
-          <span class="text" :class="{active:activeIndex===index}">{{item.name}}</span>
-          <!-- <van-icon class="close-icon" name="close" /> -->
+          <span class="text" :class="{active:activeIndex===index&&!isEdit}">{{item.name}}</span>
+          <van-icon v-show="isEdit===true && index!==0" class="close-icon" name="close" />
         </van-grid-item>
       </van-grid>
     </div>
@@ -40,7 +40,11 @@
 </template>
 
 <script>
-import { getAllChannels, resetUserChannels } from '@/api/channel.js'
+import {
+  getAllChannels,
+  resetUserChannels,
+  deleUserChannel
+} from '@/api/channel.js'
 import { mapState } from 'vuex'
 export default {
   name: 'HomeChannel',
@@ -118,7 +122,11 @@ export default {
       if (!this.isEdit) {
         this.channelChannel(item, index)
       } else {
-        this.deleChannel(item, index)
+        if (index !== 0) {
+          this.deleChannel(item, index)
+        } else {
+          return
+        }
       }
     },
     // 进入频道
@@ -132,8 +140,23 @@ export default {
     },
     // 删除频道
 
-    deleChannel(item, index) {
-      console.log('deleChannel-------')
+    async deleChannel(item, index) {
+      this.channels.splice(index, 1)
+      // 登录了
+      if (this.user) {
+        try {
+          // 请求
+          await deleUserChannel(item.id)
+        } catch (error) {
+          console.dir(error)
+        }
+      } else {
+        // 本地删除
+        // [1,2,3,4]
+        // [1,2,3]
+
+        window.localStorage.setItem('channels', JSON.stringify(this.channels))
+      }
     },
 
     // 添加频道
@@ -150,7 +173,7 @@ export default {
 
         // 发送请求
         const data = await resetUserChannels(channels)
-        console.log(data)
+        // console.log(data)
       } else {
         // 向本地添加
         window.localStorage.setItem('channels', JSON.stringify(this.channels))

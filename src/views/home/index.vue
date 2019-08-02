@@ -294,3 +294,11 @@ export default {
 </style>
 
 
+
+
+
+// 需求 :  "adsasdasdMMasdMMsadsadMMasdasdsad"希望这里的MM红色显示
+// 思路?
+"adasdsad".split()
+
+// "adsasdasdMMasdMMsadsadMMasdasdsad".split("MM").join("<span>MM</span>")

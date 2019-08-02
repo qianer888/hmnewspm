@@ -47,3 +47,15 @@ export const resetUserChannels = channels => {
         }
     })
 }
+
+/**
+ * 删除用户频道
+ * target		用户频道id
+ * 应该返回被删除的数据
+ */
+export const deleUserChannel = channel_Id => {
+    return request({
+        method: 'delete',
+        url: `/app/v1_0/user/channels/${channel_Id}`
+    })
+}
